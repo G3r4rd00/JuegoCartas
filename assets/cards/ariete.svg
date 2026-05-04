@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160" role="img" aria-label="Ariete">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4d3424"/>
+      <stop offset="1" stop-color="#9f7348"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="160" fill="url(#sky)"/>
+  <rect x="8" y="8" width="304" height="144" rx="14" fill="none" stroke="#d8b084" stroke-opacity="0.62" stroke-width="2"/>
+  <path d="M0 130 C58 112 112 108 160 116 C214 124 262 114 320 121 L320 160 L0 160 Z" fill="#2f2117"/>
+  <rect x="62" y="86" width="178" height="34" rx="17" fill="#5a3d24"/>
+  <rect x="70" y="93" width="152" height="20" rx="10" fill="#805630"/>
+  <polygon points="240,103 274,84 286,104 274,122" fill="#b58e57"/>
+  <polygon points="286,104 301,95 301,113" fill="#e5d0ac"/>
+  <circle cx="94" cy="124" r="10" fill="#211711"/>
+  <circle cx="206" cy="124" r="10" fill="#211711"/>
+  <text x="24" y="34" font-family="Georgia" font-size="16" fill="#f6e1c3">ARIETE</text>
+</svg>

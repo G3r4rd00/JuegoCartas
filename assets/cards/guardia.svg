@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160" role="img" aria-label="Guardia">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2c3549"/>
+      <stop offset="1" stop-color="#6d7b95"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9e8ef"/>
+      <stop offset="1" stop-color="#64808e"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="160" fill="url(#sky)"/>
+  <rect x="8" y="8" width="304" height="144" rx="14" fill="none" stroke="#b6c6dc" stroke-opacity="0.62" stroke-width="2"/>
+  <path d="M42 142 C74 110 104 94 160 86 C216 94 246 110 278 142 Z" fill="#1a202b" opacity="0.65"/>
+  <path d="M160 26 L238 52 V88 C238 113 206 132 160 142 C114 132 82 113 82 88 V52 Z" fill="url(#shield)"/>
+  <path d="M160 38 L224 60 V86 C224 106 198 120 160 128 C122 120 96 106 96 86 V60 Z" fill="#1e3f53"/>
+  <path d="M160 46 L210 63 V84 C210 98 190 109 160 115 C130 109 110 98 110 84 V63 Z" fill="#dceff7"/>
+  <rect x="154" y="58" width="12" height="44" fill="#7d2632"/>
+  <rect x="140" y="73" width="40" height="10" fill="#7d2632"/>
+  <text x="24" y="34" font-family="Georgia" font-size="16" fill="#dde9ff">GUARDIA</text>
+</svg>

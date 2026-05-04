@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160" role="img" aria-label="Tesoro Menor">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5a2f13"/>
+      <stop offset="0.55" stop-color="#b9782a"/>
+      <stop offset="1" stop-color="#f2c060"/>
+    </linearGradient>
+    <radialGradient id="light" cx="56%" cy="52%" r="52%">
+      <stop offset="0" stop-color="#fff4c8" stop-opacity="0.95"/>
+      <stop offset="0.55" stop-color="#ffe8a1" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#ffe8a1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7f4a21"/>
+      <stop offset="1" stop-color="#4a2812"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe9a8"/>
+      <stop offset="1" stop-color="#c78f2f"/>
+    </linearGradient>
+    <radialGradient id="coin" cx="35%" cy="28%" r="70%">
+      <stop offset="0" stop-color="#fff6cd"/>
+      <stop offset="0.6" stop-color="#f1c564"/>
+      <stop offset="1" stop-color="#b1731f"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="320" height="160" fill="url(#bg)"/>
+  <ellipse cx="160" cy="80" rx="126" ry="66" fill="url(#light)"/>
+  <rect x="8" y="8" width="304" height="144" rx="14" fill="none" stroke="#f7da9a" stroke-opacity="0.58" stroke-width="2"/>
+
+  <ellipse cx="160" cy="133" rx="126" ry="24" fill="#3b2313" opacity="0.56"/>
+
+  <g transform="translate(95 58)">
+    <rect x="0" y="14" width="130" height="46" rx="7" fill="url(#wood)" stroke="#2f180b" stroke-width="2"/>
+    <rect x="4" y="18" width="122" height="38" rx="5" fill="none" stroke="#a06a33" stroke-width="1" opacity="0.6"/>
+    <path d="M0 32 C20 10, 110 10, 130 32 L130 20 C110 0, 20 0, 0 20 Z" fill="#693a1a"/>
+    <path d="M0 32 C20 12, 110 12, 130 32 L130 18 C110 -2, 20 -2, 0 18 Z" fill="url(#wood)" stroke="#2f180b" stroke-width="2"/>
+    <rect x="59" y="19" width="12" height="22" rx="2" fill="url(#metal)" stroke="#8d611d" stroke-width="1"/>
+    <circle cx="65" cy="31" r="3" fill="#6a4517"/>
+    <rect x="18" y="27" width="8" height="24" rx="2" fill="url(#metal)" opacity="0.85"/>
+    <rect x="104" y="27" width="8" height="24" rx="2" fill="url(#metal)" opacity="0.85"/>
+  </g>
+
+  <g>
+    <ellipse cx="116" cy="120" rx="20" ry="8" fill="url(#coin)"/>
+    <ellipse cx="136" cy="114" rx="20" ry="8" fill="url(#coin)"/>
+    <ellipse cx="156" cy="120" rx="20" ry="8" fill="url(#coin)"/>
+    <ellipse cx="176" cy="114" rx="20" ry="8" fill="url(#coin)"/>
+    <ellipse cx="196" cy="121" rx="20" ry="8" fill="url(#coin)"/>
+    <ellipse cx="146" cy="128" rx="20" ry="8" fill="url(#coin)"/>
+    <ellipse cx="168" cy="129" rx="20" ry="8" fill="url(#coin)"/>
+  </g>
+
+  <g fill="#fff3c8" opacity="0.78">
+    <circle cx="210" cy="36" r="2.2"/>
+    <circle cx="224" cy="46" r="1.6"/>
+    <circle cx="196" cy="48" r="1.4"/>
+  </g>
+</svg>

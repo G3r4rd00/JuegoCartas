@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160" role="img" aria-label="Tesoro Mayor">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3d2a52"/>
+      <stop offset="1" stop-color="#c79c36"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="53%" cy="56%" r="48%">
+      <stop offset="0" stop-color="#ffe9a3" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#ffe9a3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="coin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff2c4"/>
+      <stop offset="1" stop-color="#b87419"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="160" fill="url(#sky)"/>
+  <rect x="8" y="8" width="304" height="144" rx="14" fill="none" stroke="#f8d48f" stroke-opacity="0.7" stroke-width="2"/>
+  <ellipse cx="164" cy="92" rx="130" ry="56" fill="url(#shine)"/>
+  <ellipse cx="160" cy="132" rx="124" ry="26" fill="#322014" opacity="0.6"/>
+  <ellipse cx="126" cy="112" rx="24" ry="10" fill="url(#coin)"/>
+  <ellipse cx="150" cy="105" rx="24" ry="10" fill="url(#coin)"/>
+  <ellipse cx="174" cy="112" rx="24" ry="10" fill="url(#coin)"/>
+  <ellipse cx="198" cy="104" rx="24" ry="10" fill="url(#coin)"/>
+  <ellipse cx="140" cy="123" rx="24" ry="10" fill="url(#coin)"/>
+  <ellipse cx="166" cy="124" rx="24" ry="10" fill="url(#coin)"/>
+  <ellipse cx="191" cy="121" rx="24" ry="10" fill="url(#coin)"/>
+  <polygon points="160,54 168,70 186,73 173,85 176,103 160,94 144,103 147,85 134,73 152,70" fill="#55d1d8"/>
+  <circle cx="160" cy="83" r="6" fill="#f5ffff"/>
+  <text x="24" y="34" font-family="Georgia" font-size="16" fill="#fff2ce">TESORO MAYOR</text>
+</svg>

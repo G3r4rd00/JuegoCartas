@@ -1,0 +1,10 @@
+{
+  "name": "casas-en-guerra",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prototipo web 1 vs 1 de cartas de tropas para Casas en Guerra.",
+  "scripts": {
+    "start": "node server.js",
+    "generate:art": "node scripts/generate-card-art.mjs"
+  }
+}
