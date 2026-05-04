@@ -13,6 +13,7 @@ import { createCard, shuffle, calculateGold, nextPlayerIndex } from "./utils.js"
 export class GameEngine {
     constructor() {
         this.listeners = [];
+        this.animListeners = [];
         this.state = this.createInitialState();
     }
 
@@ -27,6 +28,8 @@ export class GameEngine {
             phasePlayer: 0,
             phasePasses: [false, false],
             roundNumber: 1,
+            attackSubPhase: "declaring",  // "declaring" | "defending"
+            pendingAttack: null,          // { attackerPlayerIndex, attackerUnitId, mode: "assault" }
             discardModalOpen: false,
             discardModalPlayerIndex: null,
             showOpponentPiles: false,
@@ -41,6 +44,17 @@ export class GameEngine {
         return () => {
             this.listeners = this.listeners.filter((entry) => entry !== listener);
         };
+    }
+
+    subscribeToAnimEvents(listener) {
+        this.animListeners.push(listener);
+        return () => {
+            this.animListeners = this.animListeners.filter((e) => e !== listener);
+        };
+    }
+
+    emitAnim(event) {
+        this.animListeners.forEach((l) => l(event));
     }
 
     notify() {
@@ -133,9 +147,11 @@ export class GameEngine {
 
     setPhase(phase, starterIndex) {
         this.state.phase = phase;
+        this.state.attackSubPhase = "declaring";
+        this.state.pendingAttack = null;
         if (phase === PHASES.ATTACK) {
-            this.state.phasePlayer = null;
-            this.state.phasePasses = [true, true];
+            this.state.phasePlayer = starterIndex;
+            this.state.phasePasses = [false, false];
             return;
         }
         this.state.phasePlayer = starterIndex;
@@ -159,8 +175,9 @@ export class GameEngine {
 
     startAttackPhase() {
         this.setPhase(PHASES.ATTACK, this.state.phaseStarter);
-        this.state.message = "Fase de ataque simultaneo: resuelve el combate.";
-        this.addLog("Empieza fase de ataque simultaneo.");
+        const starter = this.state.players[this.state.phaseStarter];
+        this.state.message = `Fase de ataque: ${starter.name} declara el primer ataque.`;
+        this.addLog("Empieza fase de ataque.");
         this.notify();
     }
 
@@ -220,12 +237,15 @@ export class GameEngine {
         }
 
         const amount = player.gold;
-        player.bankGold += amount;
-        this.markSpentTreasures(player, amount);
+        const treasuresToSave = player.hand.filter((card) => card.type === "treasure" && !card.spent);
+        player.hand = player.hand.filter((card) => !(card.type === "treasure" && !card.spent));
+        player.deck.push(...treasuresToSave);
+
         player.gold = 0;
 
-        this.addLog(`${player.name} guarda ${amount} de oro en su banco.`);
-        this.state.message = `${player.name} almacena ${amount} de oro para turnos futuros.`;
+        this.addLog(`${player.name} guarda ${treasuresToSave.length} tesoro(s) para el siguiente turno.`);
+        this.state.message = `${player.name} aparta ${treasuresToSave.length} tesoro(s) al tope del mazo — volverán el próximo turno.`;
+        this.emitAnim({ type: "bank-gold", playerIndex: this.state.phasePlayer, treasureIds: treasuresToSave.map((c) => c.id) });
         this.notify();
         return { ok: true };
     }
@@ -234,12 +254,68 @@ export class GameEngine {
         return !this.state.isGameOver
             && this.state.playerTwoMode === "machine"
             && this.state.phasePlayer === 1
-            && (this.state.phase === PHASES.BUY || this.state.phase === PHASES.DEPLOY);
+            && (
+                this.state.phase === PHASES.BUY
+                || this.state.phase === PHASES.DEPLOY
+                || (this.state.phase === PHASES.ATTACK && this.state.attackSubPhase === "declaring")
+            );
+    }
+
+    isMachineDefendTurn() {
+        return !this.state.isGameOver
+            && this.state.playerTwoMode === "machine"
+            && this.state.phase === PHASES.ATTACK
+            && this.state.attackSubPhase === "defending"
+            && this.state.pendingAttack !== null
+            && this.state.pendingAttack.attackerPlayerIndex === 0;
     }
 
     isCurrentActionHuman() {
         return !this.state.isGameOver
             && (this.state.playerTwoMode === "human" || this.state.phasePlayer === 0);
+    }
+
+    /**
+     * Devuelve true si el jugador humano (player 0) tiene al menos una acción
+     * útil disponible en la fase actual y es su turno.
+     */
+    humanHasActions() {
+        if (this.state.isGameOver) return false;
+        if (this.state.phasePlayer !== 0) return false;
+        if (!this.isCurrentActionHuman()) return false;
+
+        const player = this.state.players[0];
+
+        if (this.state.phase === PHASES.BUY) {
+            const gold = this.getAvailableGold(player);
+            // ¿Puede comprar algo del mercado?
+            const canBuyMarket = this.state.market.some((c) => c.cost <= gold);
+            // ¿Puede comprar de su reserva?
+            const canBuyReserve = player.reserve.some((c) => c.cost <= gold);
+            // ¿Puede reservar algo (necesita ≥1 oro y hueco)?
+            const canReserve = gold >= 1 && player.reserve.length < MAX_RESERVE_SIZE && this.state.market.length > 0;
+            // ¿Puede guardar oro (tiene tesoros sin gastar)?
+            const canBank = player.gold > 0;
+            return canBuyMarket || canBuyReserve || canReserve || canBank;
+        }
+
+        if (this.state.phase === PHASES.DEPLOY) {
+            // ¿Tiene tropas en mano y hueco en el tablero?
+            return player.board.length < MAX_BOARD_SIZE
+                && player.hand.some((c) => c.type === "troop");
+        }
+
+        if (this.state.phase === PHASES.ATTACK && this.state.attackSubPhase === "declaring") {
+            // ¿Tiene unidades disponibles para atacar?
+            return player.board.some((u) => !u.exhausted);
+        }
+
+        if (this.state.phase === PHASES.ATTACK && this.state.attackSubPhase === "defending") {
+            // Siempre puede elegir (defender o no defender), así que sí tiene acción
+            return this.state.phasePlayer === 0;
+        }
+
+        return false;
     }
 
     movePhaseForwardAfterAction(currentPlayerIndex) {
@@ -270,6 +346,9 @@ export class GameEngine {
         const passingIndex = this.state.phasePlayer;
         this.state.phasePasses[passingIndex] = true;
         this.addLog(`${this.state.players[passingIndex].name} pasa en fase de ${this.state.phase === PHASES.BUY ? "compra" : "despliegue"}.`);
+        if (passingIndex === 1) {
+            this.emitAnim({ type: "machine-pass", phase: this.state.phase, playerName: this.state.players[1].name });
+        }
 
         if (!this.maybeAdvanceFromPasses()) {
             const otherIndex = nextPlayerIndex(passingIndex);
@@ -302,6 +381,7 @@ export class GameEngine {
 
         this.addLog(`${player.name} compra ${marketCard.name} del mercado.`);
         this.state.message = `${player.name} compra ${marketCard.name}.`;
+        this.emitAnim({ type: "buy", playerIndex: this.state.phasePlayer, cardKey: marketCard.key, cardName: marketCard.name, marketCardId: cardId });
         this.movePhaseForwardAfterAction(this.state.phasePlayer);
         this.notify();
         return { ok: true };
@@ -332,6 +412,7 @@ export class GameEngine {
 
         this.addLog(`${player.name} reserva ${marketCard.name} por 1 oro.`);
         this.state.message = `${player.name} aparta ${marketCard.name} en su reserva.`;
+        this.emitAnim({ type: "reserve", playerIndex: this.state.phasePlayer, cardKey: marketCard.key, cardName: marketCard.name, marketCardId: cardId });
         this.movePhaseForwardAfterAction(this.state.phasePlayer);
         this.notify();
         return { ok: true };
@@ -357,6 +438,7 @@ export class GameEngine {
 
         this.addLog(`${player.name} compra ${reservedCard.name} de su reserva.`);
         this.state.message = `${player.name} compra ${reservedCard.name} de la reserva.`;
+        this.emitAnim({ type: "buy-reserve", playerIndex: this.state.phasePlayer, cardName: reservedCard.name });
         this.movePhaseForwardAfterAction(this.state.phasePlayer);
         this.notify();
         return { ok: true };
@@ -390,6 +472,7 @@ export class GameEngine {
 
         this.addLog(`${player.name} despliega ${card.name}.`);
         this.state.message = `${player.name} coloca ${card.name} en el frente.`;
+        this.emitAnim({ type: "deploy", playerIndex: ownerIndex, cardId: card.id, cardName: card.name });
         this.movePhaseForwardAfterAction(ownerIndex);
         this.notify();
         return { ok: true };
@@ -402,100 +485,6 @@ export class GameEngine {
         deadUnits.forEach((unit) => {
             player.discard.push(unit);
         });
-    }
-
-    applyDamageByPriority(playerIndex, damage) {
-        if (damage <= 0) {
-            return { unitDamage: 0, fortressDamage: 0 };
-        }
-
-        const player = this.state.players[playerIndex];
-        let pending = damage;
-        const guards = player.board.filter((unit) => unit.guard).sort((a, b) => a.currentHealth - b.currentHealth);
-        const nonGuards = player.board.filter((unit) => !unit.guard).sort((a, b) => a.currentHealth - b.currentHealth);
-
-        [...guards, ...nonGuards].forEach((unit) => {
-            if (pending <= 0) {
-                return;
-            }
-            const dealt = Math.min(unit.currentHealth, pending);
-            unit.currentHealth -= dealt;
-            pending -= dealt;
-        });
-
-        this.resolveUnitDeaths(playerIndex);
-
-        const fortressDamage = Math.max(0, pending);
-        if (fortressDamage > 0) {
-            player.fort -= fortressDamage;
-        }
-
-        return {
-            unitDamage: damage - pending,
-            fortressDamage
-        };
-    }
-
-    buildAttackPlan(attackers, defenders) {
-        const damageByUnit = new Map();
-        let fortressDamage = 0;
-
-        if (defenders.length === 0) {
-            attackers.forEach((attacker) => {
-                fortressDamage += attacker.attack;
-            });
-            return { damageByUnit, fortressDamage };
-        }
-
-        const hasGuards = defenders.some((unit) => unit.guard);
-        const preferredDefenders = hasGuards
-            ? defenders.filter((unit) => unit.guard)
-            : defenders;
-        const chosenTargets = new Set();
-
-        attackers.forEach((attacker) => {
-            const untargeted = preferredDefenders
-                .filter((unit) => !chosenTargets.has(unit.id))
-                .sort((a, b) => a.currentHealth - b.currentHealth);
-
-            const target = (untargeted[0] || [...preferredDefenders].sort((a, b) => a.currentHealth - b.currentHealth)[0]);
-            if (!target) {
-                fortressDamage += attacker.attack;
-                return;
-            }
-
-            chosenTargets.add(target.id);
-            const previous = damageByUnit.get(target.id) || 0;
-            damageByUnit.set(target.id, previous + attacker.attack);
-        });
-
-        return { damageByUnit, fortressDamage };
-    }
-
-    applyAttackPlan(playerIndex, plan) {
-        const player = this.state.players[playerIndex];
-        let unitDamage = 0;
-
-        player.board.forEach((unit) => {
-            const damage = plan.damageByUnit.get(unit.id) || 0;
-            if (damage <= 0) {
-                return;
-            }
-            const dealt = Math.min(unit.currentHealth, damage);
-            unit.currentHealth -= damage;
-            unitDamage += dealt;
-        });
-
-        this.resolveUnitDeaths(playerIndex);
-
-        if (plan.fortressDamage > 0) {
-            player.fort -= plan.fortressDamage;
-        }
-
-        return {
-            unitDamage,
-            fortressDamage: plan.fortressDamage
-        };
     }
 
     endGame(winnerIndex) {
@@ -511,51 +500,171 @@ export class GameEngine {
         this.addLog("Partida terminada en empate por destruccion simultanea.");
     }
 
-    resolveAttackPhase() {
-        if (this.state.isGameOver || this.state.phase !== PHASES.ATTACK) {
-            return { ok: false, error: "No puedes resolver ataque fuera de su fase." };
-        }
+    // ── Nuevos métodos de combate por ataque dirigido ────────────────────
 
-        const board0Snapshot = [...this.state.players[0].board];
-        const board1Snapshot = [...this.state.players[1].board];
-        const attack0 = board0Snapshot.reduce((sum, unit) => sum + unit.attack, 0);
-        const attack1 = board1Snapshot.reduce((sum, unit) => sum + unit.attack, 0);
-
-        const planOnP1 = this.buildAttackPlan(board0Snapshot, board1Snapshot);
-        const planOnP0 = this.buildAttackPlan(board1Snapshot, board0Snapshot);
-
-        const resultOnP1 = this.applyAttackPlan(1, planOnP1);
-        const resultOnP0 = this.applyAttackPlan(0, planOnP0);
-
-        if (this.state.players[0].fort <= 0) {
-            this.state.players[0].fort = 0;
-        }
-        if (this.state.players[1].fort <= 0) {
-            this.state.players[1].fort = 0;
-        }
-
-        this.addLog(`Ataque simultaneo: Alba ${attack0} vs Bruma ${attack1}.`);
-        this.state.message = `Alba inflige ${resultOnP1.unitDamage} a unidades y ${resultOnP1.fortressDamage} a fortaleza. Bruma inflige ${resultOnP0.unitDamage} a unidades y ${resultOnP0.fortressDamage} a fortaleza.`;
-
+    checkGameOver() {
+        this.state.players[0].fort = Math.max(0, this.state.players[0].fort);
+        this.state.players[1].fort = Math.max(0, this.state.players[1].fort);
         const p0Dead = this.state.players[0].fort <= 0;
         const p1Dead = this.state.players[1].fort <= 0;
-        if (p0Dead && p1Dead) {
-            this.endGameDraw();
-            this.notify();
-            return { ok: true };
+        if (p0Dead && p1Dead) { this.endGameDraw(); return true; }
+        if (p1Dead) { this.endGame(0); return true; }
+        if (p0Dead) { this.endGame(1); return true; }
+        return false;
+    }
+
+    resolveCombat(attackerPlayerIndex, attackerUnit, defenderPlayerIndex, defenderUnit, overkillToFortress) {
+        const atkSnap = attackerUnit.attack;
+        const defSnap = defenderUnit.attack;
+        const defHPSnap = defenderUnit.currentHealth;
+
+        // Daño simultáneo
+        attackerUnit.currentHealth -= defSnap;
+        defenderUnit.currentHealth -= atkSnap;
+
+        // Overkill del atacante va a la fortaleza solo en modo asalto
+        if (overkillToFortress) {
+            const overkill = Math.max(0, atkSnap - defHPSnap);
+            if (overkill > 0) {
+                this.state.players[defenderPlayerIndex].fort -= overkill;
+                this.addLog(`Overkill: ${overkill} de daño traspasa a la fortaleza.`);
+            }
         }
-        if (p1Dead) {
-            this.endGame(0);
-            this.notify();
-            return { ok: true };
+
+        this.resolveUnitDeaths(attackerPlayerIndex);
+        this.resolveUnitDeaths(defenderPlayerIndex);
+    }
+
+    declareAttack(attackerPlayerIndex, attackerUnitId, mode, targetUnitId = null) {
+        if (this.state.isGameOver
+            || this.state.phase !== PHASES.ATTACK
+            || this.state.attackSubPhase !== "declaring"
+            || this.state.phasePlayer !== attackerPlayerIndex) {
+            return { ok: false, error: "No puedes atacar en este momento." };
         }
-        if (p0Dead) {
-            this.endGame(1);
+
+        const attacker = this.state.players[attackerPlayerIndex];
+        const attackerUnit = attacker.board.find((u) => u.id === attackerUnitId);
+        if (!attackerUnit) {
+            return { ok: false, error: "Unidad no encontrada." };
+        }
+        if (attackerUnit.exhausted) {
+            return { ok: false, error: "Esta unidad ya atacó este turno." };
+        }
+
+        const defenderPlayerIndex = nextPlayerIndex(attackerPlayerIndex);
+
+        if (mode === "duel") {
+            if (!targetUnitId) {
+                return { ok: false, error: "Debes elegir una unidad objetivo para el duelo." };
+            }
+            const defender = this.state.players[defenderPlayerIndex];
+            const targetUnit = defender.board.find((u) => u.id === targetUnitId);
+            if (!targetUnit) {
+                return { ok: false, error: "Unidad objetivo no encontrada." };
+            }
+
+            attackerUnit.exhausted = true;
+            this.resolveCombat(attackerPlayerIndex, attackerUnit, defenderPlayerIndex, targetUnit, false);
+            this.addLog(`${attacker.name}: duelo ${attackerUnit.name} vs ${targetUnit.name}.`);
+            this.state.message = `Duelo resuelto. Turno de ${this.state.players[defenderPlayerIndex].name}.`;
+            this.emitAnim({ type: "duel", attackerPlayerIndex, attackerCardId: attackerUnitId, attackerCardName: attackerUnit.name, defenderPlayerIndex, defenderCardId: targetUnitId, defenderCardName: targetUnit.name });
+
+            if (this.checkGameOver()) { this.notify(); return { ok: true }; }
+
+            // Resetear pases y pasar el turno al rival
+            this.state.phasePasses = [false, false];
+            this.state.phasePlayer = defenderPlayerIndex;
             this.notify();
             return { ok: true };
         }
 
-        this.finishRoundAndStartNext();
+        if (mode === "assault") {
+            // Guardar ataque pendiente y esperar respuesta del defensor
+            attackerUnit.exhausted = true;
+            this.state.pendingAttack = { attackerPlayerIndex, attackerUnitId, mode: "assault" };
+            this.state.attackSubPhase = "defending";
+            this.state.phasePlayer = defenderPlayerIndex;
+            const defenderName = this.state.players[defenderPlayerIndex].name;
+            this.state.message = `${attacker.name} asalta la fortaleza con ${attackerUnit.name} (ATK ${attackerUnit.attack}). ${defenderName}: elige quién defiende.`;
+            this.addLog(`${attacker.name} declara asalto con ${attackerUnit.name}.`);
+            this.emitAnim({ type: "assault-declared", attackerPlayerIndex, attackerCardId: attackerUnitId, attackerCardName: attackerUnit.name, defenderPlayerIndex });
+            this.notify();
+            return { ok: true };
+        }
+
+        return { ok: false, error: "Modo de ataque desconocido." };
+    }
+
+    declareDefense(defenderPlayerIndex, defenderUnitId) {
+        if (this.state.isGameOver
+            || this.state.phase !== PHASES.ATTACK
+            || this.state.attackSubPhase !== "defending"
+            || this.state.phasePlayer !== defenderPlayerIndex) {
+            return { ok: false, error: "No puedes defender en este momento." };
+        }
+
+        const pending = this.state.pendingAttack;
+        const attackerPlayerIndex = pending.attackerPlayerIndex;
+        const attacker = this.state.players[attackerPlayerIndex];
+        const attackerUnit = attacker.board.find((u) => u.id === pending.attackerUnitId);
+        const defender = this.state.players[defenderPlayerIndex];
+
+        if (defenderUnitId) {
+            const defenderUnit = defender.board.find((u) => u.id === defenderUnitId);
+            if (!defenderUnit) {
+                return { ok: false, error: "Unidad defensora no encontrada." };
+            }
+            // Asalto con overkill a fortaleza
+            // attackerUnit puede estar muerto si hubo algún error, pero lo protegemos
+            if (attackerUnit) {
+                this.emitAnim({ type: "assault-defended", attackerPlayerIndex, attackerCardId: pending.attackerUnitId, attackerCardName: attackerUnit.name, defenderPlayerIndex, defenderCardId: defenderUnitId, defenderCardName: defenderUnit.name });
+                this.resolveCombat(attackerPlayerIndex, attackerUnit, defenderPlayerIndex, defenderUnit, true);
+                this.addLog(`${defender.name} defiende con ${defenderUnit.name}. Asalto resuelto.`);
+            }
+            this.state.message = `Asalto resuelto. Turno de ${defender.name}.`;
+        } else {
+            // Sin defensor: todo el ATK del atacante va a la fortaleza
+            if (attackerUnit) {
+                this.emitAnim({ type: "assault-undefended", attackerPlayerIndex, attackerCardId: pending.attackerUnitId, attackerCardName: attackerUnit.name, defenderPlayerIndex, damage: attackerUnit.attack });
+                defender.fort -= attackerUnit.attack;
+                this.addLog(`${defender.name} no defiende. ${attackerUnit.attack} de daño directo a la fortaleza.`);
+            }
+            this.state.message = `Asalto sin defensa. ${attacker.name} inflige daño directo. Turno de ${defender.name}.`;
+        }
+
+        this.state.pendingAttack = null;
+        this.state.attackSubPhase = "declaring";
+
+        if (this.checkGameOver()) { this.notify(); return { ok: true }; }
+
+        // Tras el asalto, el turno pasa al defensor (ahora puede atacar)
+        this.state.phasePasses = [false, false];
+        this.state.phasePlayer = defenderPlayerIndex;
+        this.notify();
+        return { ok: true };
+    }
+
+    passAttack() {
+        if (this.state.isGameOver
+            || this.state.phase !== PHASES.ATTACK
+            || this.state.attackSubPhase !== "declaring") {
+            return { ok: false, error: "No puedes pasar en este momento." };
+        }
+
+        const passingIndex = this.state.phasePlayer;
+        this.state.phasePasses[passingIndex] = true;
+        this.addLog(`${this.state.players[passingIndex].name} pasa en fase de ataque.`);
+
+        if (this.state.phasePasses[0] && this.state.phasePasses[1]) {
+            this.finishRoundAndStartNext();
+            return { ok: true };
+        }
+
+        const otherIndex = nextPlayerIndex(passingIndex);
+        this.state.phasePlayer = otherIndex;
+        this.state.message = `${this.state.players[otherIndex].name} decide si atacar.`;
+        this.notify();
         return { ok: true };
     }
 

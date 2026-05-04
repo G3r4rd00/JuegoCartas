@@ -6,119 +6,186 @@
     <title>Casas en Guerra</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;500;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <main class="app-shell">
-        <header class="hero">
-            <h1>Casas en Guerra</h1>
-            <div id="phaseBanner" class="phase-banner" aria-live="polite">
-                <div class="phase-step" data-phase="buy">1. Compra</div>
-                <div class="phase-step" data-phase="deploy">2. Despliegue</div>
-                <div class="phase-step" data-phase="attack">3. Ataque simultaneo</div>
-            </div>
-        </header>
 
-        <section class="opponent-front-bar player-panel player-opponent" id="player-1-panel">
-            <div class="opponent-front-head">
-                <div>
-                    <p class="player-name" id="player-1-name">Casa Bruma</p>
-                    <p class="player-turn" id="player-1-turn">Esperando</p>
-                </div>
-                <div class="fort-box">
-                    <span>Fortaleza</span>
-                    <strong id="player-1-fort">20</strong>
-                    <p class="bank-indicator">Banco: <strong id="player-1-bank">0</strong></p>
-                </div>
-                <div class="opponent-reserve-toggle">
-                    <button id="toggleOpponentPilesButton" class="ghost-button reserve-button" type="button">Ver mazo y descarte rival</button>
-                </div>
-            </div>
-            <div id="player-1-piles-wrap" class="piles-wrap hidden">
-                <div id="player-1-piles" class="piles-row opponent-piles-row"></div>
-            </div>
-            <p class="section-title">Frente rival</p>
-            <div id="player-1-board" class="zone opponent-front-zone"></div>
-            <div id="player-1-reserve-area" class="reserve-area-opponent">
-                <p class="section-title">Reserva rival <span class="reserve-count" id="player-1-reserve-count"></span></p>
-                <div id="player-1-reserve" class="zone reserve-zone reserve-zone-opponent"></div>
-            </div>
-            <div id="player-1-hand-area" class="hand-area">
-                <p class="section-title">Mano</p>
-                <div id="player-1-hand" class="zone hand-zone"></div>
-            </div>
-        </section>
+<!-- ═══════════════════════════════════════════
+     LAYOUT PRINCIPAL
+     ═══════════════════════════════════════════ -->
+<div class="game-root">
 
-        <div class="top-bar" id="topBar">
-            <div class="top-bar-market" id="topBarMarket">
-                <h3>Mercado de reclutas</h3>
-                <p class="market-help">Fase de compra por turnos alternos · tambien puedes reservar cartas</p>
-                <div id="marketZone" class="zone market-zone"></div>
+    <!-- ── CABECERA AZUL ──────────────────────────────────────── -->
+    <header class="top-header">
+        <h1 class="game-title">Casas en Guerra</h1>
+
+        <div id="phaseBanner" class="phase-banner" aria-live="polite">
+            <div class="phase-step" data-phase="buy">
+                <span class="phase-num">I</span>
+                <span class="phase-name">Compra</span>
             </div>
-            <div class="top-bar-controls">
-                <label class="mode-control-inline" for="playerTwoMode">
-                    <span class="status-label">Rival</span>
-                    <select id="playerTwoMode">
-                        <option value="human">Humano</option>
-                        <option value="machine" selected>Maquina</option>
-                    </select>
-                </label>
-                <button id="bankButton" class="icon-button" title="Guardar todo el oro de mano en el banco">🏦 <span>Guardar oro</span></button>
-                <button id="restartButton" class="icon-button" title="Nueva partida">↺ <span>Nueva partida</span></button>
+            <div class="phase-step" data-phase="deploy">
+                <span class="phase-num">II</span>
+                <span class="phase-name">Despliegue</span>
+            </div>
+            <div class="phase-step" data-phase="attack">
+                <span class="phase-num">III</span>
+                <span class="phase-name">Ataque</span>
             </div>
         </div>
 
-        <section class="layout-grid">
-            <article class="player-panel player-self" id="player-0-panel">
-                <div class="player-header">
-                    <div>
+        <p id="gameMessage" class="game-message" aria-live="polite"></p>
+
+        <div class="header-controls">
+            <label class="mode-control-inline" for="playerTwoMode">
+                <span class="status-label">Rival</span>
+                <select id="playerTwoMode">
+                    <option value="human">Humano</option>
+                    <option value="machine" selected>Máquina</option>
+                </select>
+            </label>
+            <button id="restartButton" class="icon-button btn-restart" type="button">
+                <span class="btn-icon">↺</span>
+                <span>Nueva partida</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ── CUERPO PRINCIPAL: mercado lateral + contenido ─────── -->
+    <div class="main-body">
+
+        <!-- COLUMNA IZQUIERDA: Mercado (rojo) -->
+        <aside class="market-sidebar" id="topBarMarket">
+            <h3 class="market-title">Mercado</h3>
+            <p class="market-help">Fase de compra · reserva por 1 oro</p>
+            <div id="marketZone" class="zone market-zone"></div>
+        </aside>
+
+        <!-- COLUMNA DERECHA: zona de juego -->
+        <div class="play-column">
+
+            <!-- ZONA VERDE: info + fortaleza + pilas del enemigo -->
+            <div class="enemy-info-bar">
+                <!-- Fortaleza enemiga (clickable para atacar) -->
+                <div class="enemy-fortress-widget" id="enemyFortressWidget" title="Fortaleza enemiga">
+                    <div class="fortress-icon">🏰</div>
+                    <div class="fortress-hp-wrap">
+                        <div class="fort-bar-fill" id="player-1-fort-bar" data-level="high"></div>
+                    </div>
+                    <strong class="fortress-hp-value" id="player-1-fort">20</strong>
+                    <span class="fortress-label" id="player-1-name">Casa Bruma</span>
+                    <p class="bank-indicator">Banco: <strong id="player-1-bank">0</strong></p>
+                    <p class="player-turn" id="player-1-turn">Esperando</p>
+                </div>
+
+                <!-- Reserva del enemigo -->
+                <div id="player-1-reserve-area" class="enemy-reserve-section">
+                    <p class="section-title">Reserva rival <span class="reserve-count" id="player-1-reserve-count"></span></p>
+                    <div id="player-1-reserve" class="zone reserve-zone reserve-zone-opponent"></div>
+                </div>
+
+                <!-- Pilas del enemigo (mazo + descarte) — siempre visibles -->
+                <div class="enemy-piles-section">
+                    <div id="player-1-piles-wrap" class="piles-wrap">
+                        <div id="player-1-piles" class="piles-row"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZONA NEGRA: tablero de batalla -->
+            <div class="battle-arena">
+                <!-- Tablero del rival (arriba) -->
+                <div class="arena-half arena-enemy">
+                    <p class="arena-label">Frente rival</p>
+                    <div id="player-1-board" class="zone board-zone opponent-front-zone"></div>
+                    <div id="player-1-hand-area" class="hand-area is-hidden">
+                        <div id="player-1-hand" class="zone hand-zone"></div>
+                    </div>
+                </div>
+
+                <!-- Divisor central -->
+                <div class="arena-divider">
+                    <span class="divider-line"></span>
+                    <span class="divider-icon">⚔</span>
+                    <span class="divider-line"></span>
+                </div>
+
+                <!-- Panel de combate -->
+                <div id="combatPanel" class="combat-panel hidden"></div>
+
+                <!-- Tablero del jugador (abajo) -->
+                <div class="arena-half arena-player">
+                    <p class="arena-label">Tu frente</p>
+                    <div id="player-0-board" class="zone board-zone"></div>
+                </div>
+            </div>
+
+            <!-- ZONA AMARILLA: mano + pilas del jugador -->
+            <div class="player-hand-bar" id="player-0-panel">
+                <!-- Pilas del jugador + acciones -->
+                <div class="player-piles-actions">
+                    <div id="player-0-fort-widget" class="player-fort-box">
+                        <span class="fort-label">Fortaleza</span>
+                        <strong id="player-0-fort">20</strong>
+                        <div class="fort-bar-wrap">
+                            <div class="fort-bar-fill" id="player-0-fort-bar" data-level="high"></div>
+                        </div>
+                        <p class="bank-indicator">Banco: <strong id="player-0-bank">0</strong></p>
                         <p class="player-name">Casa Alba</p>
                         <p class="player-turn" id="player-0-turn">Turno activo</p>
                     </div>
-                    <div class="fort-box">
-                        <span>Fortaleza</span>
-                        <strong id="player-0-fort">20</strong>
-                        <p class="bank-indicator">Banco: <strong id="player-0-bank">0</strong></p>
-                        <div class="fort-actions">
-                            <button id="attackButton" class="action-icon-button" title="Resolver fase de ataque">
-                                <span class="action-icon">⚔</span>
-                                <span class="action-label">Resolver</span>
-                            </button>
-                            <button id="endTurnButton" class="action-icon-button" title="Pasar accion">
-                                <span class="action-icon">⏭</span>
-                                <span class="action-label">Pasar</span>
-                            </button>
-                        </div>
+
+                    <div id="player-0-piles" class="piles-row"></div>
+
+                    <div class="fort-actions">
+                        <button id="attackButton" class="action-icon-button btn-attack" title="Resolver fase de ataque">
+                            <span class="action-icon">⚔</span>
+                            <span class="action-label">Resolver</span>
+                        </button>
+                        <button id="endTurnButton" class="action-icon-button btn-pass" title="Pasar acción">
+                            <span class="action-icon">⏭</span>
+                            <span class="action-label">Pasar</span>
+                        </button>
+                        <button id="bankButton" class="action-icon-button btn-bank" title="Guardar todo el oro de mano en el banco">
+                            <span class="action-icon">🏦</span>
+                            <span class="action-label">Guardar oro</span>
+                        </button>
+                    </div>
+
+                    <!-- Reserva del jugador -->
+                    <div id="player-0-reserve-area" class="reserve-area-self">
+                        <p class="section-title">Reserva <span class="reserve-count" id="player-0-reserve-count"></span></p>
+                        <div id="player-0-reserve" class="zone reserve-zone"></div>
                     </div>
                 </div>
-                <p class="section-title">Frente de batalla</p>
-                <div id="player-0-board" class="zone board-zone"></div>
-                <p class="section-title">Mano</p>
-                <div id="player-0-hand" class="zone hand-zone"></div>
-                <div id="player-0-piles" class="piles-row"></div>
-                <div id="player-0-reserve-area" class="reserve-area-self">
-                    <p class="section-title">Reserva <span class="reserve-count" id="player-0-reserve-count"></span></p>
-                    <div id="player-0-reserve" class="zone reserve-zone"></div>
+
+                <!-- Mano del jugador -->
+                <div class="player-hand-section">
+                    <p class="section-title">Tu mano</p>
+                    <div id="player-0-hand" class="zone hand-zone"></div>
                 </div>
-            </article>
-
-        </section>
-    </main>
-
-    <div id="discardModal" class="discard-modal hidden" aria-hidden="true">
-        <div class="discard-card">
-            <div class="discard-head">
-                <h3 id="discardTitle">Descarte</h3>
-                <button id="closeDiscardButton" class="ghost-button close-discard">Cerrar</button>
             </div>
-            <p class="market-help">Cartas boca arriba que iran al mazo cuando este se quede vacio.</p>
-            <div id="discardCards" class="zone discard-zone"></div>
+
+        </div><!-- /play-column -->
+    </div><!-- /main-body -->
+</div><!-- /game-root -->
+
+<!-- ── Modal de descarte ──────────────────────────────────────── -->
+<div id="discardModal" class="discard-modal hidden" aria-hidden="true">
+    <div class="discard-card">
+        <div class="discard-head">
+            <h3 id="discardTitle">Descarte</h3>
+            <button id="closeDiscardButton" class="ghost-button close-discard">Cerrar</button>
         </div>
+        <p class="market-help">Cartas que volverán al mazo cuando éste se vacíe.</p>
+        <div id="discardCards" class="zone discard-zone"></div>
     </div>
+</div>
 
-    <div id="toastContainer" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+<!-- ── Toasts ─────────────────────────────────────────────────── -->
+<div id="toastContainer" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
 
-    <script type="module" src="src/main.js?v=1"></script>
+<script type="module" src="src/main.js?v=3"></script>
 </body>
 </html>
