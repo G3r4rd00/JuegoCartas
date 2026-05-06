@@ -1185,7 +1185,7 @@ button:disabled {
     color: var(--gold);
 }
 
-.reserve-button { font-size: 0.62rem; padding: 4px 8px; }
+/* .reserve-button eliminado: el botón de toggle de pilas rival ya no existe */
 
 .icon-button {
     width: auto;
@@ -1259,60 +1259,8 @@ button:disabled {
 }
 
 /* ── Combat Panel ───────────────────────────────────────────── */
-.combat-panel {
-    background: rgba(6, 8, 22, 0.92);
-    border: 1px solid rgba(201, 162, 39, 0.3);
-    border-radius: 8px;
-    padding: 8px 14px;
-    margin: 2px 0;
-    text-align: center;
-}
-
-.combat-panel.hidden { display: none; }
-
-.combat-hint {
-    font-family: "Cinzel", serif;
-    font-size: 0.68rem;
-    color: var(--text-muted);
-    margin: 0 0 5px;
-    letter-spacing: 0.05em;
-}
-
-.combat-hint-small {
-    font-size: 0.58rem;
-    opacity: 0.6;
-    margin-top: 5px;
-}
-
-.combat-action-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 4px;
-}
-
-.combat-btn {
-    padding: 5px 14px;
-    border-radius: 6px;
-    border: 1px solid;
-    background: transparent;
-    font: inherit;
-    font-size: 0.66rem;
-    font-weight: 700;
-    cursor: pointer;
-    letter-spacing: 0.05em;
-    transition: all 150ms;
-    width: auto;
-    margin: 0;
-}
-
-.combat-btn-assault { border-color: var(--crimson); color: var(--crimson-light); }
-.combat-btn-assault:hover { background: rgba(158, 31, 19, 0.22); box-shadow: var(--glow-crimson); }
-.combat-btn-cancel { border-color: var(--border); color: var(--text-muted); }
-.combat-btn-cancel:hover { background: rgba(255,255,255,0.05); }
-.combat-btn-nodefend { border-color: rgba(201, 162, 39, 0.5); color: var(--gold); }
-.combat-btn-nodefend:hover { background: rgba(201, 162, 39, 0.12); box-shadow: var(--glow-gold); }
+/* El panel está siempre oculto; las fortalezas actúan como indicadores visuales */
+.combat-panel { display: none; }
 
 /* ── Discard Modal ──────────────────────────────────────────── */
 .discard-modal {

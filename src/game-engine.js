@@ -32,7 +32,6 @@ export class GameEngine {
             pendingAttack: null,          // { attackerPlayerIndex, attackerUnitId, mode: "assault" }
             discardModalOpen: false,
             discardModalPlayerIndex: null,
-            showOpponentPiles: false,
             isGameOver: false,
             log: [],
             message: ""
@@ -671,11 +670,6 @@ export class GameEngine {
     setPlayerTwoMode(mode) {
         this.state.playerTwoMode = mode;
         this.startNewGame();
-    }
-
-    toggleOpponentPiles() {
-        this.state.showOpponentPiles = !this.state.showOpponentPiles;
-        this.notify();
     }
 
     openDiscardModal(playerIndex) {
